@@ -1,0 +1,8 @@
+# Depds
+node_modules
+
+# Build
+dist
+
+# Environment
+.env
