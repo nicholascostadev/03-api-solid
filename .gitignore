@@ -6,3 +6,7 @@ dist
 
 # Environment
 .env
+
+coverage
+
+.DS_Store
