@@ -3,25 +3,26 @@ import { InMemoryCheckInsRepository } from '~/repositories/in-memory/in-memory-c
 import { CheckInUseCase } from './check-in.use-case'
 import { afterEach } from 'node:test'
 import { InMemoryGymsRepository } from '~/repositories/in-memory/in-memory-gyms.repository'
-import { Decimal } from '@prisma/client/runtime/library'
+import { MaxDistanceError } from './errors/max-distance-error'
+import { MaxNumberOfCheckInsError } from './errors/max-number-of-check-ins-error'
 
 let usersRepository: InMemoryCheckInsRepository
 let gymsRepository: InMemoryGymsRepository
 let sut: CheckInUseCase
 
 describe('Check in Use Case', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     usersRepository = new InMemoryCheckInsRepository()
     gymsRepository = new InMemoryGymsRepository()
     sut = new CheckInUseCase(usersRepository, gymsRepository)
     vi.useFakeTimers()
 
-    gymsRepository.items.push({
+    await gymsRepository.create({
       id: 'gym-01',
       title: 'Gym 01',
       description: 'Gym 01 description',
-      latitude: new Decimal(-22.1880595),
-      longitude: new Decimal(-43.753228),
+      latitude: -22.1880595,
+      longitude: -43.753228,
       phone: '123456789',
     })
   })
@@ -37,8 +38,6 @@ describe('Check in Use Case', () => {
       userLatitude: -22.1880595,
       userLongitude: -43.753228,
     })
-
-    console.log(checkIn.created_at)
 
     expect(checkIn.id).toEqual(expect.any(String))
   })
@@ -60,7 +59,7 @@ describe('Check in Use Case', () => {
         userLatitude: -22.1880595,
         userLongitude: -43.753228,
       }),
-    ).rejects.toBeInstanceOf(Error)
+    ).rejects.toBeInstanceOf(MaxNumberOfCheckInsError)
   })
 
   it('should be able to check in twice but in different days', async () => {
@@ -86,12 +85,12 @@ describe('Check in Use Case', () => {
   })
 
   it('should not be able to check in if the user is too far from the gym', async () => {
-    gymsRepository.items.push({
+    await gymsRepository.create({
       id: 'gym-02',
       title: 'Gym 02',
       description: 'Gym 02 description',
-      latitude: new Decimal(-22.5238209),
-      longitude: new Decimal(-43.7107104),
+      latitude: -22.5238209,
+      longitude: -43.7107104,
       phone: '123456789',
     })
 
@@ -102,6 +101,6 @@ describe('Check in Use Case', () => {
         userLatitude: -22.1880595,
         userLongitude: -43.753228,
       }),
-    ).rejects.toBeInstanceOf(Error)
+    ).rejects.toBeInstanceOf(MaxDistanceError)
   })
 })
